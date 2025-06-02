@@ -4,59 +4,55 @@ namespace App\Security;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Kreait\Firebase\Factory;
-use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
-use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\User;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Auth;
+use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 
 class FirebaseAuthenticator extends AbstractAuthenticator
 {
     private EntityManagerInterface $em;
+    private Auth $firebaseAuth;
 
-    public function __construct(EntityManagerInterface $em)
+    public function __construct(EntityManagerInterface $em, string $firebaseCredentialsPath)
     {
         $this->em = $em;
+
+        $this->firebaseAuth = (new Factory())
+            ->withServiceAccount($firebaseCredentialsPath)
+            ->createAuth();
     }
 
     public function supports(Request $request): ?bool
     {
-        return $request->headers->has('Authorization');
+        $authHeader = $request->headers->get('Authorization');
+        return $authHeader && str_starts_with($authHeader, 'Bearer ');
     }
 
     public function authenticate(Request $request): Passport
     {
         $authHeader = $request->headers->get('Authorization');
-
-        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-            throw new AuthenticationException('Missing or invalid Authorization header');
-        }
-
-        $idToken = substr($authHeader, 7);
-
-        $firebase = (new Factory)
-            ->withServiceAccount(__DIR__ . '/../../config/firebaseAuth.json');
+        $idToken = substr($authHeader, 7); // Remove "Bearer "
 
         try {
-            $verifiedToken = $firebase->createAuth()->verifyIdToken($idToken);
+            $verifiedToken = $this->firebaseAuth->verifyIdToken($idToken);
             $firebaseUid = $verifiedToken->claims()->get('sub');
 
             return new SelfValidatingPassport(
                 new UserBadge($firebaseUid, function () use ($firebaseUid) {
-                    $user = $this->em->getRepository(User::class)->findOneBy([
-                        'uuid' => $firebaseUid,
-                    ]);
+                    $user = $this->em->getRepository(User::class)->findOneBy(['uuid' => $firebaseUid]);
 
                     if (!$user) {
                         $user = new User();
-                        $user->setUuid($firebaseUid); // Use the correct setter from your entity
+                        $user->setUuid($firebaseUid); // Ensure this method exists
                         $this->em->persist($user);
                         $this->em->flush();
                     }
@@ -66,17 +62,20 @@ class FirebaseAuthenticator extends AbstractAuthenticator
             );
 
         } catch (FailedToVerifyToken $e) {
-            throw new AuthenticationException('Firebase token verification failed: ' . $e->getMessage());
+            throw new AuthenticationException('Invalid Firebase token');
         }
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        return null;
+        return null; // Continue to controller
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
-        return new Response('Authentication Failed: ' . $exception->getMessage(), 401);
+        return new JsonResponse([
+            'error' => 'Authentication failed',
+            'message' => $exception->getMessage()
+        ], 401);
     }
 }

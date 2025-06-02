@@ -21,41 +21,25 @@ class Students
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'students')]
     private Collection $student;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $age = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $sex = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $quizValue = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $income = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $monthlySpend = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $variableIncome = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $othersIncomes = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $patrimony = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $investimentRecommended = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?bool $isNegative = null;
+    // private ?string $age = null;
+    // private ?string $sex = null;
+    // private ?string $quizValue = null;
+    // private ?string $income = null;
+    // private ?string $monthlySpend = null;
+    // private ?string $variableIncome = null;
+    // private ?string $othersIncomes = null;
+    // private ?string $patrimony = null;
+    // private ?string $investimentRecommended = null;
+    // private ?bool $isNegative = null;
 
     /**
      * @var Collection<int, InvestimentProfile>
      */
     #[ORM\ManyToMany(targetEntity: InvestimentProfile::class, mappedBy: 'student')]
     private Collection $investimentProfiles;
+
+    #[ORM\Column(nullable: true)]
+    private ?array $studentInfo = null;
 
     public function __construct()
     {
@@ -92,126 +76,6 @@ class Students
         return $this;
     }
 
-    public function getAge(): ?string
-    {
-        return $this->age;
-    }
-
-    public function setAge(?string $age): static
-    {
-        $this->age = $age;
-
-        return $this;
-    }
-
-    public function getSex(): ?string
-    {
-        return $this->sex;
-    }
-
-    public function setSex(?string $sex): static
-    {
-        $this->sex = $sex;
-
-        return $this;
-    }
-
-    public function getQuizValue(): ?string
-    {
-        return $this->quizValue;
-    }
-
-    public function setQuizValue(?string $quizValue): static
-    {
-        $this->quizValue = $quizValue;
-
-        return $this;
-    }
-
-    public function getIncome(): ?string
-    {
-        return $this->income;
-    }
-
-    public function setIncome(?string $income): static
-    {
-        $this->income = $income;
-
-        return $this;
-    }
-
-    public function getMonthlySpend(): ?string
-    {
-        return $this->monthlySpend;
-    }
-
-    public function setMonthlySpend(?string $monthlySpend): static
-    {
-        $this->monthlySpend = $monthlySpend;
-
-        return $this;
-    }
-
-    public function getVariableIncome(): ?string
-    {
-        return $this->variableIncome;
-    }
-
-    public function setVariableIncome(?string $variableIncome): static
-    {
-        $this->variableIncome = $variableIncome;
-
-        return $this;
-    }
-
-    public function getOthersIncomes(): ?string
-    {
-        return $this->othersIncomes;
-    }
-
-    public function setOthersIncomes(?string $othersIncomes): static
-    {
-        $this->othersIncomes = $othersIncomes;
-
-        return $this;
-    }
-
-    public function getPatrimony(): ?string
-    {
-        return $this->patrimony;
-    }
-
-    public function setPatrimony(?string $patrimony): static
-    {
-        $this->patrimony = $patrimony;
-
-        return $this;
-    }
-
-    public function getInvestimentRecommended(): ?string
-    {
-        return $this->investimentRecommended;
-    }
-
-    public function setInvestimentRecommended(?string $investimentRecommended): static
-    {
-        $this->investimentRecommended = $investimentRecommended;
-
-        return $this;
-    }
-
-    public function isNegative(): ?bool
-    {
-        return $this->isNegative;
-    }
-
-    public function setIsNegative(?bool $isNegative): static
-    {
-        $this->isNegative = $isNegative;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, InvestimentProfile>
      */
@@ -235,6 +99,18 @@ class Students
         if ($this->investimentProfiles->removeElement($investimentProfile)) {
             $investimentProfile->removeStudent($this);
         }
+
+        return $this;
+    }
+
+    public function getStudentInfo(): ?array
+    {
+        return $this->studentInfo;
+    }
+
+    public function setStudentInfo(?array $studentInfo): static
+    {
+        $this->studentInfo = $studentInfo;
 
         return $this;
     }
